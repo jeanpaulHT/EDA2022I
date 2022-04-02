@@ -1,7 +1,7 @@
 #ifndef __Bplus__TREE_H__
 #define  __Bplus__TREE_H__
 
-#define NODE_SIZE 3
+#define NODE_SIZE 21
 #include <vector>
 #include <algorithm>
 #include <iostream>
@@ -36,6 +36,9 @@ struct Node{
 
     bool addKey(T key);
     void print();
+    void kill_node();
+
+    ~Node();
 };
 
 
@@ -53,8 +56,12 @@ class BplusTree{
 
     Node* find(T value);
     void insert(T value);
-    void bfs();
+
+    void print_bfs();
+    std::vector<Node*> bfs();
+
     BplusTree();
+    ~BplusTree();
 
 };
 

@@ -1,7 +1,6 @@
 #include "BplusTree.h"
 
-#pragma GCC optimize("Ofast,unroll-loops")
-#pragma GCC target("avx,avx2,fma,sse,sse2,sse3,ssse3,sse4,popcnt,abm,mmx")
+
 
 // we reserve a space in keys for the insert
 Node::Node(bool l = true){
@@ -31,26 +30,25 @@ Node* Node::find_node(T key){
 
 
 
+
 Node* Node::split_node(){
-    // 😎 bro
+    // 😎 bro, is right node generated in split
     auto bro  = new Node(Leaf);
 
 
     size_t splitPoint = nKeys/2 ;
-    std::copy(keys, keys + splitPoint, bro->keys); // copy until split point
-    std::rotate(keys, keys + splitPoint, keys + maxKeys + 1); //  rotates so that split point is at beg
+    std::copy(keys+splitPoint, keys + maxKeys + 1, bro->keys); // righ node -> copy from split point to last
+    //  left -> reduce the number of keys until split point (see below)
 
     // fixing num of keys
-    bro->nKeys = splitPoint;
-    nKeys =  nKeys - splitPoint ;
+    bro->nKeys = nKeys -splitPoint;
+    nKeys =  splitPoint ;
 
     if(!Leaf){
-        std::copy(childs, childs + splitPoint + 1, bro->childs); // copy until split point
-        std::rotate(childs, childs + splitPoint + 1, childs + maxKeys + 2); // copy until split point
-        //update the father of left node or bro
+        std::copy(childs+splitPoint + 1, childs + maxKeys + 2, bro->childs); // righ node -> copy from split point to last
         for(int i = 0; i < bro->nKeys + 1; i++){
             auto temp = bro->childs[i];
-            temp->father= bro;
+            if(temp) temp->father = bro;
         }
     }
 
@@ -58,9 +56,8 @@ Node* Node::split_node(){
     for(size_t i = bro->nKeys+1; i < bro->maxKeys + 2; i++){
         bro->childs[i] = nullptr;
     }
-
     for(size_t i = nKeys+1; i < maxKeys + 2; i++){
-        bro->childs[i] = nullptr;
+        childs[i] = nullptr;
     }
 
 
@@ -107,6 +104,12 @@ bool Node::addKey(T key){
     return nKeys <= maxKeys;
 }
 
+void Node::kill_node() {
+    for(size_t i = 0; i < nKeys ; i++){
+        if(childs[i]) childs[i]->kill_node();
+    }
+    delete this;
+}
 
 void Node::print() {
     std::cout<<"(";
@@ -115,6 +118,9 @@ void Node::print() {
         if(i < nKeys - 1) std::cout<<",";
     }
     std::cout<<")"<<std::endl;
+}
+
+Node::~Node() {
 }
 
 BplusTree::BplusTree(){
@@ -134,48 +140,47 @@ void BplusTree::insert_split(Node * node){
     Node* cur = node;
     Node*  bro = cur->split_node();
     //separator is the val that goes up
-    T separator = cur->keys[0];
+    T separator = bro->keys[0];
     // linking to other node
-    if(bro->Leaf) bro->brother = cur;
+    if(bro->Leaf) cur->brother = bro;
+
 
     // if father is root
     if(cur->father == nullptr){
         root = new Node(false);
         root->addKey(separator);
-        cur->father = root;;
+        cur->father = root;
     }
     else{
         cur->father->addKey(separator);
     }
     bro->father = cur->father;
 
-    auto it = std::find(cur->father->keys, cur->father->keys + cur->father->maxKeys, separator);
-    auto pos = std::distance(cur->father->keys, it);
-    //change children
+    auto it = std::find(bro->father->keys, bro->father->keys + bro->father->maxKeys, separator);
+    auto pos = std::distance(bro->father->keys, it);
+    //change children of father
 
+    Node* temp = bro->father->childs[pos + 1];
 
-
-    Node* temp = cur->father->childs[pos + 1];
-
-    cur->father->childs[pos] = bro;
-    cur->father->childs[pos+1] = cur;
+    bro->father->childs[pos] = cur;
+    bro->father->childs[pos+1] = bro;
 
 
 
     // reallocating children to the right after alteration of  keys
-    for(size_t i = pos + 2; i <= cur->father->nKeys; i++){
+    for(size_t i = pos + 2; i <= bro->father->nKeys; i++){
         std::swap(temp,cur->father->childs[i]);
     }
 
     //check for duplicate in children node after split
     // we check if both are internal node and the separator (who is always in father) is repeated
-    if(!cur->father->Leaf && !cur->Leaf && separator == cur->keys[0]){
-        std::rotate(cur->keys, cur->keys + 1 , cur->keys + cur->nKeys);
-        cur->nKeys--;
+    if(!bro->father->Leaf && !bro->Leaf && separator == bro->keys[0]){
+        std::rotate(bro->keys, bro->keys + 1 , bro->keys + bro->nKeys);
+        bro->nKeys--;
     }
 
-    if(cur->father->nKeys  > cur->father->maxKeys){
-        insert_split(cur->father);
+    if(bro->father->nKeys  > bro->father->maxKeys){
+        insert_split(bro->father);
     }
 
 }
@@ -196,7 +201,7 @@ void BplusTree::insert(T value){
     insert_split(cur);
 }
 
-void BplusTree::bfs(){
+void BplusTree::print_bfs(){
     std::list<Node*> arr;
     arr.emplace_back(root);
     while(!arr.empty()){
@@ -210,3 +215,26 @@ void BplusTree::bfs(){
     }
 
 }
+
+std::vector<Node*> BplusTree::bfs(){
+    std::list<Node*> arr;
+    std::vector<Node*> res;
+
+    arr.emplace_back(root);
+    while(!arr.empty()){
+        Node* temp =arr.front();
+        arr.pop_front();
+        for(size_t i = 0; i < temp->nKeys + 1; i++){
+            if(temp->Leaf) break;
+            arr.emplace_back(temp->childs[i]);
+        }
+        res.push_back(temp);
+    }
+
+    return  res;
+}
+
+BplusTree::~BplusTree() {
+    root->kill_node();
+}
+
