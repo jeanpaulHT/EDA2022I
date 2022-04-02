@@ -29,14 +29,6 @@ Node* Node::find_node(T key){
     return childs[nKeys]->find_node(key);
 }
 
-Node* Node::find_node_20(T key){
-    if(Leaf) return this;
-
-    for(int i = 0; i < nKeys;i++){
-        if(key < keys[i] )  return childs[i]->find_node(key);
-    }
-    return childs[nKeys];
-}
 
 
 Node* Node::split_node(){
@@ -60,6 +52,15 @@ Node* Node::split_node(){
             auto temp = bro->childs[i];
             temp->father= bro;
         }
+    }
+
+    // set al unused childs to nullptr
+    for(size_t i = bro->nKeys+1; i < bro->maxKeys + 2; i++){
+        bro->childs[i] = nullptr;
+    }
+
+    for(size_t i = nKeys+1; i < maxKeys + 2; i++){
+        bro->childs[i] = nullptr;
     }
 
 

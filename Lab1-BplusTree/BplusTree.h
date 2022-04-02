@@ -32,8 +32,6 @@ struct Node{
 
 
     Node* find_node(T key); // generic find to not worry about leaf
-    Node* find_node_20(T key); // generic find to not worry about leaf
-
     Node* split_node(); // putting it here to be recursive
 
     bool addKey(T key);
@@ -44,7 +42,7 @@ struct Node{
 
 // template<typename T>
 class BplusTree{
-public:
+    public:
     Node* root;
 
     void insert_split(Node *node);
