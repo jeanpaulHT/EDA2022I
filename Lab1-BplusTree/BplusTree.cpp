@@ -5,9 +5,8 @@
 // we reserve a space in keys for the insert
 Node::Node(bool l = true){
     nKeys = 0;
-    maxKeys = NODE_SIZE;
     Leaf = l;
-    father = brother = nullptr;
+    father = brother_left = brother_right = nullptr;
 }
 
 bool Node::isLeaf(){
@@ -65,11 +64,11 @@ Node* Node::split_node(){
 }
 
 
-bool Node::contains(T key){
+int  Node::contains(T key){
     for(int i = 0; i < nKeys; i++){
-        if(keys[i] == key) return true;
+        if(keys[i] == key) return i;
     }
-    return false;
+    return NPOS;
 }
 
 bool Node::addKey(T key){
@@ -104,6 +103,34 @@ bool Node::addKey(T key){
     return nKeys <= maxKeys;
 }
 
+bool Node::removeKey(T key) {
+
+    size_t pos = contains(key);
+
+    if(pos == NPOS) return false;
+    //rotates element to the left
+    std::rotate(keys + pos, keys+pos + 1, keys + maxKeys );
+    nKeys--;
+    return true;
+}
+
+void Node::merge(Node* node){
+    for(int i = 0; i < node->nKeys;i++){
+        addKey(node->keys[i]);
+    }
+}
+
+
+bool Node::removePos(size_t pos) {
+
+    if(pos == NPOS) return false;
+    //rotates element to the left
+    std::rotate(keys + pos, keys+pos + 1, keys + maxKeys );
+    nKeys--;
+    return true;
+}
+
+
 void Node::kill_node() {
     for(size_t i = 0; i < nKeys ; i++){
         if(childs[i]) childs[i]->kill_node();
@@ -122,6 +149,8 @@ void Node::print() {
 
 Node::~Node() {
 }
+
+
 
 BplusTree::BplusTree(){
     root = nullptr;
@@ -142,7 +171,10 @@ void BplusTree::insert_split(Node * node){
     //separator is the val that goes up
     T separator = bro->keys[0];
     // linking to other node
-    if(bro->Leaf) cur->brother = bro;
+    if(bro->Leaf){
+        cur->brother_right = bro;
+        bro->brother_left = cur;
+    }
 
 
     // if father is root
@@ -156,31 +188,38 @@ void BplusTree::insert_split(Node * node){
     }
     bro->father = cur->father;
 
-    auto it = std::find(bro->father->keys, bro->father->keys + bro->father->maxKeys, separator);
-    auto pos = std::distance(bro->father->keys, it);
+    auto father = cur->father;
+
+    auto it = std::find(father->keys, father->keys + father->maxKeys, separator);
+    auto pos = std::distance(father->keys, it);
     //change children of father
 
-    Node* temp = bro->father->childs[pos + 1];
+    Node* temp = father->childs[pos + 1];
 
-    bro->father->childs[pos] = cur;
-    bro->father->childs[pos+1] = bro;
+    father->childs[pos] = cur;
+    father->childs[pos+1] = bro;
 
 
 
     // reallocating children to the right after alteration of  keys
-    for(size_t i = pos + 2; i <= bro->father->nKeys; i++){
-        std::swap(temp,cur->father->childs[i]);
+    for(size_t i = pos + 2; i <= father->nKeys; i++){
+        std::swap(temp,father->childs[i]);
+        if(father->childs[i]->isLeaf()){
+            father->childs[i-1]->brother_right = father->childs[i];
+            father->childs[i]->brother_left = father->childs[i-1];
+
+        }
     }
 
     //check for duplicate in children node after split
     // we check if both are internal node and the separator (who is always in father) is repeated
-    if(!bro->father->Leaf && !bro->Leaf && separator == bro->keys[0]){
+    if(!father->Leaf && !bro->Leaf && separator == bro->keys[0]){
         std::rotate(bro->keys, bro->keys + 1 , bro->keys + bro->nKeys);
         bro->nKeys--;
     }
 
-    if(bro->father->nKeys  > bro->father->maxKeys){
-        insert_split(bro->father);
+    if(father->nKeys  > father->maxKeys){
+        insert_split(father);
     }
 
 }
@@ -200,6 +239,107 @@ void BplusTree::insert(T value){
 
     insert_split(cur);
 }
+
+
+void BplusTree::borrow_sibiling(Node* cur , Node* brother, int side){
+
+
+
+
+
+}
+
+void BplusTree::remove_internal_node(Node* father , T value) {
+
+    size_t pos = father->contains(value);
+    if(pos ==  NPOS) return;
+    father->removePos(pos);
+    auto  cur = father->childs[pos + 1];
+    while (!cur->isLeaf()){
+        cur = cur->childs[0];
+    }
+    father->addKey(cur->keys[0]);
+}
+
+
+void BplusTree::remove(T value) {
+    auto cur = find(value);
+    auto original_val = value;
+    if(cur == nullptr){
+        return;
+    }
+
+    cur->removeKey(value);
+
+    if(cur->nKeys >= Node::minKeys){
+        //
+        if(cur->father->contains(value) != NPOS){
+            remove_internal_node(cur->father, value);
+        }
+        return;
+    }
+
+    // el caso 2 se toma a consideracion mas adelante
+
+    auto father = cur->father;
+    auto brother_r = (cur->brother_right->father == father) ?  cur->brother_right : nullptr;
+    auto brother_l = (cur->brother_left->father == father) ? cur->brother_left : nullptr;
+
+    auto it = std::find(father->childs, father->childs + father->maxKeys + OVERFLOW + 1, cur);
+    auto pos = std::distance(father->childs, it);
+    pos = (pos == 0) ? 0 : pos-1;
+
+
+
+    //CASE 2.a: se puede tomar prestado de los nodos hermanos inmediatos
+
+    if(brother_l != nullptr && brother_l->nKeys > Node::minKeys){
+        auto borrow_value = brother_l->keys[brother_l->nKeys - 1];
+        cur->addKey(brother_l->keys[brother_l->nKeys - 1]);
+        brother_l->removeKey(brother_l->keys[brother_l->nKeys - 1]);
+        remove_internal_node(cur->father, borrow_value);
+    }
+    else if(brother_r != nullptr && brother_r->nKeys > Node::minKeys){
+        auto borrow_value = brother_r->keys[0];
+        cur->addKey(brother_r->keys[0]);
+        brother_r->removeKey(brother_r->keys[0]);
+        remove_internal_node(cur->father, borrow_value);
+
+    }
+    // CASE 2.c: queda un vacio en el nodo inmediato y no puede tomar prestado
+    else{
+        Node* to_merge;
+        if(brother_r != nullptr && brother_r->father == cur->father){
+            to_merge = brother_r;
+            cur->brother_right = to_merge->brother_right;
+            to_merge->brother_right->brother_left = cur;
+        }
+        else if(brother_l != nullptr && brother_l->father == cur->father){
+            to_merge = brother_l;
+            cur->brother_left = to_merge->brother_left;
+            to_merge->brother_left->brother_right = cur;
+        }
+
+        it = std::find(father->childs, father->childs + Node::maxKeys + OVERFLOW + 1, to_merge);
+        auto pos_child = std::distance(father->childs, it);
+        auto pos_val = (pos_child == 0) ? 0 : pos_child-1;
+
+        cur->merge(to_merge);
+        father->removeKey(father->keys[pos_val]);
+        std::rotate(father->childs + pos_child,  father->childs + pos_child + 1,father->childs +  Node::maxKeys  );
+
+        delete to_merge;
+    }
+
+    remove_internal_node(cur->father, original_val);
+    if(cur->father->father != nullptr && cur->father->father->contains(original_val) != NPOS){
+        remove_internal_node(cur->father->father, original_val);
+
+    }
+
+
+}
+
 
 void BplusTree::print_bfs(){
     std::list<Node*> arr;
@@ -237,4 +377,5 @@ std::vector<Node*> BplusTree::bfs(){
 BplusTree::~BplusTree() {
     root->kill_node();
 }
+
 

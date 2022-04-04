@@ -1,12 +1,19 @@
 #ifndef __Bplus__TREE_H__
 #define  __Bplus__TREE_H__
 
-#define NODE_SIZE 21
+
+#define ORDER 4
+#define NODE_SIZE ORDER - 1
+#define NPOS -1
+#define OVERFLOW 1
 #include <vector>
 #include <algorithm>
 #include <iostream>
 #include <list>
+#include <cmath>
 
+
+enum SIDE {LEFT, RIGHT};
 
 
 
@@ -19,25 +26,33 @@ struct Node{
     Node* childs[NODE_SIZE + 2]  {};
 
     Node* father;
-    Node* brother;
+    Node *brother_right, *brother_left;
 
-    size_t maxKeys, nKeys;
+    static constexpr  size_t maxKeys = NODE_SIZE;
+    static constexpr  size_t minKeys =   (NODE_SIZE) /2 ;
+
+
+    size_t nKeys{};
     bool Leaf;
 
-    Node(bool);
+    explicit Node(bool);
 
     bool isLeaf();
     void setLeaf(bool);
-    bool contains(T key);
+    int contains(T key);
 
 
     Node* find_node(T key); // generic find to not worry about leaf
     Node* split_node(); // putting it here to be recursive
 
     bool addKey(T key);
-    void print();
-    void kill_node();
+    bool removeKey(T key);
+    bool removePos(size_t pos);
+    void merge(Node* node);
 
+    void print();
+
+    void kill_node();
     ~Node();
 };
 
@@ -45,17 +60,21 @@ struct Node{
 
 // template<typename T>
 class BplusTree{
-    public:
+    private:
+
     Node* root;
 
     void insert_split(Node *node);
+    void remove_internal_node(Node*, T value);
 
+    void borrow_sibiling(Node*, Node*, int);
 
-
-    // public:
+    public:
 
     Node* find(T value);
+
     void insert(T value);
+    void remove(T value);
 
     void print_bfs();
     std::vector<Node*> bfs();
