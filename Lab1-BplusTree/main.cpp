@@ -12,45 +12,23 @@ int main(){
         bt.insert(it);
     }
 
-    std::vector<int> arr1 {21,31,20,10,7,25};
+    std::vector<int> arr1 {21,31,20,10,7,25,42,4};
     for(auto it: arr1){
         bt.remove(it);
     }
 
 
-    int b = 4;
     auto cnt = bt.bfs();
     for(auto n: cnt){
         std::cout<<'(';
-        for(int k = 0; k< n->nKeys; k++){
+        for(size_t k = 0; k < n->nKeys; k++){
             std::cout<<n->keys[k]<<" ";
         }
         std::cout<<")";
-        if(n->Leaf) std::cout<<" -> ";
+//        if(n->father) std::cout<<n->father->keys[0];
+        if(n->isLeaf()) std::cout<<" -> ";
         else std::cout<<std::endl;
     }
-//    auto c1 = bt.find(1);
-//    std::cout<<'\n';
-//    while (c1){
-//        std::cout<<'(';
-//        for(int k = 0; k< c1->nKeys; k++){
-//            std::cout<<c1->keys[k]<<" ";
-//        }
-//        std::cout<<") -> ";
-//        c1 = c1->brother_right;
-//    }
-//
-//    auto c2 = bt.find(42);
-//    std::cout<<'\n';
-//    while (c2){
-//        std::cout<<'(';
-//        for(int k = 0; k< c2->nKeys; k++){
-//            std::cout<<c2->keys[k]<<" ";
-//        }
-//        std::cout<<") -> ";
-//        c2 = c2->brother_left;
-//    }
-
 
     //Read file
 //    std::ifstream texto;

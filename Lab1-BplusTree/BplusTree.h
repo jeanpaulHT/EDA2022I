@@ -1,3 +1,7 @@
+//
+// Created by Jean on 4/5/2022.
+//
+
 #ifndef __Bplus__TREE_H__
 #define  __Bplus__TREE_H__
 
@@ -13,7 +17,7 @@
 #include <cmath>
 
 
-enum SIDE {LEFT, RIGHT};
+enum SIDE {LEFT, RIGHT , NONE};
 
 
 
@@ -22,61 +26,100 @@ typedef int T;
 
 
 struct Node{
-    T keys[NODE_SIZE + 1] {};
-    Node* childs[NODE_SIZE + 2]  {};
+
 
     Node* father;
-    Node *brother_right, *brother_left;
+    size_t nKeys{};
+
+    T keys[NODE_SIZE + 1] {};
+
 
     static constexpr  size_t maxKeys = NODE_SIZE;
     static constexpr  size_t minKeys =   (NODE_SIZE) /2 ;
 
 
-    size_t nKeys{};
-    bool Leaf;
 
-    explicit Node(bool);
+    Node();
+    virtual ~Node() = default;
 
-    bool isLeaf();
-    void setLeaf(bool);
-    int contains(T key);
+    virtual bool isLeaf() = 0;
+    int contains(T key) ;
 
 
-    Node* find_node(T key); // generic find to not worry about leaf
-    Node* split_node(); // putting it here to be recursive
+    static void fix_inorder_val(Node*, T);
+    static T get_minimun(Node *);
+
+    virtual Node* find_node(T key) = 0; //finds the leaf who should contain a key
+    virtual Node* split_node() = 0; // splits the nodes in two, returns the right split
+    virtual void insert_and_split() = 0;  // call when the node is full
+    virtual void remove(T key) = 0;
+
 
     bool addKey(T key);
     bool removeKey(T key);
-    bool removePos(size_t pos);
     void merge(Node* node);
 
     void print();
 
-    void kill_node();
-    ~Node();
+    virtual void kill_node() = 0;
+
+};
+
+struct Leaf: public Node{
+
+    Leaf *brother_right, *brother_left;
+
+    Leaf();
+    ~Leaf() override = default;
+
+    bool isLeaf() override;
+
+    Node * find_node(T key) override;
+    Node * split_node() override;
+    void insert_and_split() override;
+    void remove(T key) override;
+
+    void kill_node() override;
+};
+
+
+struct InternalNode: public Node{
+
+    Node* childs[NODE_SIZE + 2]{};
+
+    InternalNode() = default;
+    ~InternalNode() override = default;
+
+    bool isLeaf() override;
+
+    Node * find_node(T key) override;
+    void fix_children();
+    void merge_internal();
+
+    Node * split_node() override;
+    void insert_and_split() override;
+    void insert_children(T, Node*, Node*);
+
+    void remove(T key) override;
+
+    void kill_node() override;
 };
 
 
 
-// template<typename T>
 class BplusTree{
-    private:
+private:
 
     Node* root;
 
-    void insert_split(Node *node);
-    void remove_internal_node(Node*, T value);
 
-    void borrow_sibiling(Node*, Node*, int);
-
-    public:
+public:
 
     Node* find(T value);
 
     void insert(T value);
     void remove(T value);
 
-    void print_bfs();
     std::vector<Node*> bfs();
 
     BplusTree();
@@ -85,4 +128,4 @@ class BplusTree{
 };
 
 
-#endif 
+#endif
