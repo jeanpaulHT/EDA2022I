@@ -438,31 +438,49 @@ void InternalNode::merge_internal() {
         auto f_replace = cur_father->keys[pos_child-1];
         cur->addKey(f_replace);
         cur_father->removeKey(f_replace);
-        cur_father->addKey(to_replace);
+        if(brother_l->nKeys >= Node::minKeys){
+            cur_father->addKey(to_replace);
+        }
+        else{
+            cur->insert_children(f_replace,cur->childs[cur->nKeys-1], to_merge);
+            cur->addKey(to_replace);
+            std::rotate(cur_father->childs + pos_child +1 ,  cur_father->childs + pos_child + 2, cur_father->childs + Node::maxKeys + 2 );
+            cur_father->fix_children();
+            std::copy( brother_r->childs, brother_r->childs + 1,cur->childs + cur->nKeys);
+        }
+
         cur->insert_children(f_replace,to_merge,cur->childs[0]);
     }
     else if(side == RIGHT){
         auto f_replace = cur_father->keys[pos_child];
         cur->addKey(f_replace);
         cur_father->removeKey(f_replace);
-        cur_father->addKey(to_replace);
+        if(brother_r->nKeys >= Node::minKeys){
+            cur_father->addKey(to_replace);
+            cur->insert_children(f_replace,cur->childs[cur->nKeys-1], to_merge);
+        }
+        else{
+            cur->insert_children(f_replace,cur->childs[cur->nKeys-1], to_merge);
+            cur->addKey(to_replace);
+            std::rotate(cur_father->childs + pos_child +1 ,  cur_father->childs + pos_child + 2, cur_father->childs + Node::maxKeys + 2 );
+            cur_father->fix_children();
+            std::copy( brother_r->childs, brother_r->childs + 1,cur->childs + cur->nKeys);
 
-        cur->insert_children(f_replace,cur->childs[cur->nKeys-1], to_merge);
+        }
 
 
     }
     //shrink tree
     else{
-
         int cnt_child = 0;
         Node* temp_child;
 
-        temp_child = cur_father->childs[cnt_child++];
+        temp_child = cur_father->childs[cnt_child];
         while (temp_child){
             temp_child->father = cur_father;
             cur_father->copyKeys(temp_child);
             temp_child = cur_father->childs[cnt_child++];
-            delete temp_child;
+
         }
 
         if(!cur_father->childs[0]->isLeaf()){

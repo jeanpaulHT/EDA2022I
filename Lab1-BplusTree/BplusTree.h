@@ -6,7 +6,7 @@
 #define  __Bplus__TREE_H__
 
 
-#define ORDER 3
+#define ORDER 4
 #define NODE_SIZE ORDER - 1
 #define NPOS -1
 #define OVERFLOW 1

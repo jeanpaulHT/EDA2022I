@@ -13,7 +13,7 @@ int main(){
         bt.insert(it);
     }
     //40,35,30,5
-    std::vector<int> arr1 { 40,35,30};
+    std::vector<int> arr1 { 40,35,30,5,55,88,45,25,18};
     for(auto it: arr1){
         bt.remove(it);
     }
@@ -92,10 +92,10 @@ int main(){
 //        }
 //        std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
 //        int total = 0;
-//        for(int i = 0; i<1000000; i++){
-//            total += (tree->find(datos[i])->contains(datos[i]) != NPOS)? 1:0;
-//        }
-//        if(total == 1000000) std::cout<<"Sucess\n";
+////        for(int i = 0; i<1000000/2; i++){
+//////            std::cout<<i;
+//////            tree->remove(datos[i]);
+////        }
 //        // Calcular tiempo
 //        auto tiempo = std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
 //        tiempoInseccion += tiempo;
@@ -104,7 +104,7 @@ int main(){
 //        delete tree;
 //    }
 //    std::cout<<tiempoInseccion;
-//
+
 
     return 0;
 }
