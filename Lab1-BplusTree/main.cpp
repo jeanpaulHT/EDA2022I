@@ -6,31 +6,69 @@
 
 int main(){
     BplusTree bt;
-    std::vector<int> arr {1,4,7,10,17,21,31,25,19,20,28,42};
+    //5,15,25,35,45,30,45,40,20,55,18,88
+    std::vector<int> arr {5,15,25,35,45,30,45,40,20,55,18,88};
 
     for(auto it: arr){
         bt.insert(it);
     }
-
-    std::vector<int> arr1 {21,31,20,10,7,25,42,4};
+    //40,35,30,5
+    std::vector<int> arr1 { 40,35,30};
     for(auto it: arr1){
         bt.remove(it);
     }
 
 
     auto cnt = bt.bfs();
+    size_t lcnt = 0;
+    size_t temp = 0;
     for(auto n: cnt){
         std::cout<<'(';
+
         for(size_t k = 0; k < n->nKeys; k++){
             std::cout<<n->keys[k]<<" ";
         }
         std::cout<<")";
+
 //        if(n->father) std::cout<<n->father->keys[0];
+
+        if(lcnt == 0) std::cout<<std::endl;
         if(n->isLeaf()) std::cout<<" -> ";
-        else std::cout<<std::endl;
+
+        temp += n->nKeys + 1;
+        if(lcnt == 0){
+            lcnt += temp;
+            temp = 0;
+        }
+
+        lcnt--;
+    }
+    auto c1 = bt.find(88);
+
+    while (c1){
+        std::cout<<"(";
+        for(size_t k = 0; k < c1->nKeys; k++){
+            std::cout<<c1->keys[k]<<" ";
+        }
+        std::cout<<")";
+
+        c1 = static_cast<Leaf*>(c1)->brother_left;
     }
 
-    //Read file
+    std::cout<<"\nRight:\n";
+    c1 = bt.find(5);
+
+    while (c1){
+        std::cout<<"(";
+        for(size_t k = 0; k < c1->nKeys; k++){
+            std::cout<<c1->keys[k]<<" ";
+        }
+        std::cout<<")";
+
+        c1 = static_cast<Leaf*>(c1)->brother_right;
+    }
+
+//    Read file
 //    std::ifstream texto;
 //    texto.open("./output.txt");
 //
@@ -43,7 +81,7 @@ int main(){
 //            datos[i++] = element;
 //        }
 //    }
-//
+////
 //    int64_t tiempoInseccion = 0;
 //    for (int t=0; t<10; ++t){
 //        auto tree = new BplusTree();
@@ -53,15 +91,20 @@ int main(){
 //            tree->insert( datos[i] );
 //        }
 //        std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-//
+//        int total = 0;
+//        for(int i = 0; i<1000000; i++){
+//            total += (tree->find(datos[i])->contains(datos[i]) != NPOS)? 1:0;
+//        }
+//        if(total == 1000000) std::cout<<"Sucess\n";
 //        // Calcular tiempo
 //        auto tiempo = std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
-////        std::cout<<tiempo<<std::endl;
 //        tiempoInseccion += tiempo;
+//
 //
 //        delete tree;
 //    }
 //    std::cout<<tiempoInseccion;
+//
 
     return 0;
 }

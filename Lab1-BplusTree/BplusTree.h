@@ -6,7 +6,7 @@
 #define  __Bplus__TREE_H__
 
 
-#define ORDER 4
+#define ORDER 3
 #define NODE_SIZE ORDER - 1
 #define NPOS -1
 #define OVERFLOW 1
@@ -57,6 +57,7 @@ struct Node{
 
     bool addKey(T key);
     bool removeKey(T key);
+    void copyKeys(Node* node);
     void merge(Node* node);
 
     void print();
